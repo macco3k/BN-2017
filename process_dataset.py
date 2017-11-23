@@ -14,7 +14,7 @@ def load_dataset(path):
 def process_dataset(df):
     # Keep only columns we need
     cols = {
-        'original_title': 'str',
+        'title': 'str',
         'budget': 'int',
         'genres': 'str',
         'production_countries': 'str',
