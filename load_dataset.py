@@ -6,7 +6,7 @@ import numpy as np
 data_path = r'D:\OneDrive\Documenti\Radboud\2017\Bayesian Networks\Assignment 1\data'
 movies_file = os.path.join(data_path, 'tmdb_5000_movies.csv')
 credits_file = os.path.join(data_path, 'tmdb_5000_credits.csv')
-
+people_file = os.path.join(data_path, 'person_ids.json')
 
 def load_tmdb_movies(path):
     df = pd.read_csv(path)
@@ -41,11 +41,17 @@ def get_director(crew_data):
     return safe_access(directors, [0])
 
 
+def get_cast_popularity(cast_data, popularity):
+    cast_ids = [x['id'] for x in cast_data]
+    cast_popularity = sum([popularity[id] for id in cast_ids if id in popularity.keys()])
+    return cast_popularity
+
+
 def pipe_flatten_names(keywords):
     return '|'.join([x['name'] for x in keywords])
 
 
-def convert_dataset(movies, credits):
+def convert_dataset(movies, credits, people):
     # Converts TMDb data to make it as compatible as possible with kernels built on the original version of the data.
     tmdb_movies = movies.copy()
 
@@ -56,6 +62,7 @@ def convert_dataset(movies, credits):
     tmdb_movies['actor_1_name'] = credits['cast'].apply(lambda x: safe_access(x, [0, 'name']))
     tmdb_movies['actor_2_name'] = credits['cast'].apply(lambda x: safe_access(x, [1, 'name']))
     tmdb_movies['actor_3_name'] = credits['cast'].apply(lambda x: safe_access(x, [2, 'name']))
+    tmdb_movies['cast_popularity'] = credits['cast'].apply(lambda x: get_cast_popularity(x, people))
     tmdb_movies['genres'] = tmdb_movies['genres'].apply(pipe_flatten_names)
     tmdb_movies['keywords'] = tmdb_movies['keywords'].apply(pipe_flatten_names)
 
@@ -71,7 +78,11 @@ def filter_dataset(df):
 
 movies = load_tmdb_movies(movies_file)
 credits = load_tmdb_credits(credits_file)
-# original_format =convert_to_original_format(movies, credits)
-converted_df = convert_dataset(movies, credits)
+
+# Load actors popularity from the persons_id file
+people = [json.loads(l) for l in open(people_file, mode='r', encoding='utf-8')]
+popularity = {p['id']: p['popularity'] for p in people}
+
+converted_df = convert_dataset(movies, credits, popularity)
 filtered_df = filter_dataset(converted_df)
 filtered_df.to_csv(os.path.join(data_path, 'data.csv'), index=False, encoding='utf-8')

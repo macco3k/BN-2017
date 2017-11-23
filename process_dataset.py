@@ -27,7 +27,8 @@ def process_dataset(df):
         'director_name': 'str',
         'actor_1_name': 'str',
         'actor_2_name': 'str',
-        'actor_3_name': 'str'
+        'actor_3_name': 'str',
+        'cast_popularity': 'float'
     }
 
     df = df[list(cols.keys())]
