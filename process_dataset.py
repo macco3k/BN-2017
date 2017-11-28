@@ -7,9 +7,10 @@ data_path = r'D:\OneDrive\Documenti\Radboud\2017\Bayesian Networks\Assignment 1\
 data_file = os.path.join(data_path, 'data.csv')
 out_file = os.path.join(data_path, 'train.csv')
 
+major_companies = ["Walt Disney", "Warner", "20th Century Fox", "Universal Pictures", "Columbia Pictures", "Paramount Pictures"]
+
 def load_dataset(path):
     return pd.read_csv(path)
-
 
 def process_dataset(df):
     # Keep only columns we need
@@ -33,6 +34,26 @@ def process_dataset(df):
 
     df = df[list(cols.keys())]
     df = df.astype(dtype=cols, copy=True)
+
+    df['us'] = [1 if 'US' in x else 0 for x in df['production_countries']]
+    df['us_only'] = [1 if x == 'US' else 0 for x in df['production_countries']]
+    # df['major'] = df['production_companies'].apply(lambda companies: 1 if set(companies.split('|') - set(major_companies)) == None)
+
+    # I got upset because I tried many ways but could not get it the way I want
+    # So the below is silly elementary code, but it works :)
+    major_list = np.zeros((len(df)))
+    for i in range(len(df)):
+        count = 0
+        for j in range(len(major_companies)):
+            if major_companies[j] in df['production_companies'][i]:
+                count = count + 1
+        print(count)
+
+        if count == 0:
+            major_list[i] = 0
+        else:
+            major_list[i] = 1
+    df['Major'] = major_list
 
     return df
 
