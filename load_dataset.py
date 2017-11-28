@@ -40,6 +40,13 @@ def get_director(crew_data):
     directors = [x['name'] for x in crew_data if x['job'] == 'Director']
     return safe_access(directors, [0])
 
+def get_director_popularity(crew_data, popularity):
+    director_id = safe_access([x['id'] for x in crew_data if x['job'] == 'Director'], [0])
+    try:
+        return popularity[director_id]
+    except KeyError:
+        return 0
+
 
 def get_cast_popularity(cast_data, popularity):
     cast_ids = [x['id'] for x in cast_data]
@@ -59,6 +66,7 @@ def convert_dataset(movies, credits, people):
     tmdb_movies['production_companies'] = tmdb_movies['production_companies'].apply(pipe_flatten_names)
     tmdb_movies['language'] = tmdb_movies['spoken_languages'].apply(lambda x: safe_access(x, [0, 'name']))
     tmdb_movies['director_name'] = credits['crew'].apply(get_director)
+    tmdb_movies['director_popularity'] = credits['crew'].apply(lambda x: get_director_popularity(x, people))
     tmdb_movies['actor_1_name'] = credits['cast'].apply(lambda x: safe_access(x, [0, 'name']))
     tmdb_movies['actor_2_name'] = credits['cast'].apply(lambda x: safe_access(x, [1, 'name']))
     tmdb_movies['actor_3_name'] = credits['cast'].apply(lambda x: safe_access(x, [2, 'name']))
