@@ -3,7 +3,7 @@ import numpy as np
 import os
 import requests
 
-data_path = r'./'
+data_path = r'../data'
 data_file = os.path.join(data_path, 'data.csv')
 out_file = os.path.join(data_path, 'train.csv')
 
@@ -43,13 +43,14 @@ def process_dataset(df):
 
     # Aggregate all cast members' popularity together, normalize and bin
     df['cast_popularity'] = df['director_popularity'] + df['cast_popularity']
-    df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=3)#, labels=['low', 'avg', 'high'])
+    df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=3, labels=['1st', '2nd', '3rd'])
 
     # Bin vote average
     df['vote_average_binned'] = pd.cut(df['vote_average'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
 
     # Bin budget and revenue
-    df['budget_binned'] = pd.cut(df['budget'], bins=3)#, labels=['low', 'avg', 'high'])
+    df['budget_binned'] = pd.cut(df['budget'], bins=3, labels=['1st', '2nd', '3rd'])
+    df['vote_count_binned'] = pd.cut(df['vote_count'], bins=3, labels=['1st', '2nd', '3rd'])
 
     # Compute a binary column for US vs not-US productions
     df['us'] = [1 if 'US' in x else 0 for x in df['production_countries']]
