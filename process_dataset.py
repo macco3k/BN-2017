@@ -22,24 +22,35 @@ def process_dataset(df):
     cols = {
         'title': 'str',
         'budget': 'int',
+        'budget_binned': 'str',
         'genres': 'str',
         'macro_genre': 'str',
         'original_language': 'str',
         #'popularity': 'float',
         'revenue': 'uint',
         'vote_average': 'float',
+        'vote_average_binned': 'str',
         'vote_count': 'int',
         'director_name': 'str',
         'actor_1_name': 'str',
         'actor_2_name': 'str',
         'actor_3_name': 'str',
         'cast_popularity': 'float',
+        'cast_popularity_binned': 'str',
         'us': 'int',
         'major': 'int'
     }
 
-    # Aggregate all cast members' popularity together
+    # Aggregate all cast members' popularity together, normalize and bin
     df['cast_popularity'] = df['director_popularity'] + df['cast_popularity']
+    df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=3)#, labels=['low', 'avg', 'high'])
+
+    # Bin vote average
+    df['vote_average_binned'] = pd.cut(df['vote_average'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
+
+    # Bin budget and revenue
+    df['budget_binned'] = pd.cut(df['budget'], bins=3)#, labels=['low', 'avg', 'high'])
+
     # Compute a binary column for US vs not-US productions
     df['us'] = [1 if 'US' in x else 0 for x in df['production_countries']]
 
@@ -47,7 +58,6 @@ def process_dataset(df):
     major_list = np.zeros((len(df)))
     genre_list = []
 
-    uncovered_movies = 0
     for i in range(len(df)):
         count = 0
         for j in range(len(major_companies)):
@@ -85,7 +95,7 @@ def build_cptables(df):
         revenue|popularity
     """
     major_groupby = df.groupby('major')
-    major_us_groupby = major_groupby.groupby('us')
+    major_us_groupby = df.groupby(['major', 'us'])
     p_major = major_groupby.size().apply(lambda x: x/sum(major_groupby.size()))
     p_us_major = [count/sum(group) for group in df.groupby(['major', 'us']).size() for count in group]
     return df
