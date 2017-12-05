@@ -3,7 +3,7 @@ import numpy as np
 import os
 import requests
 
-data_path = r'D:\OneDrive\Documenti\Radboud\2017\Bayesian Networks\Assignment 1\data'
+data_path = r'./'
 data_file = os.path.join(data_path, 'data.csv')
 out_file = os.path.join(data_path, 'train.csv')
 
