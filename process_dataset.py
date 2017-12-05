@@ -38,7 +38,9 @@ def process_dataset(df):
         'cast_popularity': 'float',
         'cast_popularity_binned': 'str',
         'us': 'int',
-        'major': 'int'
+        'major': 'int',
+        'revenue_binned': 'str',
+        'vote_count_binned':'str'
     }
 
     # Aggregate all cast members' popularity together, normalize and bin
@@ -49,10 +51,16 @@ def process_dataset(df):
     df['vote_average_binned'] = pd.cut(df['vote_average'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
 
     # Bin budget and revenue
-    df['budget_binned'] = pd.cut(df['budget'], bins=3)#, labels=['low', 'avg', 'high'])
+    df['budget_binned'] = pd.cut(df['budget'], bins=[0,10000000,50000000,400000000], labels=['low', 'avg', 'high'])
 
     # Compute a binary column for US vs not-US productions
     df['us'] = [1 if 'US' in x else 0 for x in df['production_countries']]
+
+    # bin revenue: low, avg, high
+    df['revenue_binned'] = pd.cut(df['revenue'], bins=[0,10000000, 200000000,3000000000] , labels=['low', 'avg', 'high'])
+
+    # bin vote_count: low, avg, high
+    df['vote_count_binned'] = pd.cut(df['vote_count'],  bins=[0, 200, 1300, 14000], labels=['bad', 'ok', 'great'])
 
     # Compute a binary column for major vs. non-major productions
     major_list = np.zeros((len(df)))
@@ -113,6 +121,10 @@ def main():
     df = load_dataset(data_file)
     df = process_dataset(df)
     # df = build_cptables(df)
+
+    print ('low revenue: ',(sum([1 if i == 'bad' else 0 for i in df['vote_count_binned']])))
+    print ('avg revenue: ', (sum([1 if i == 'ok' else 0 for i in df['vote_count_binned']])))
+    print( 'hgh revenue: ', (sum([1 if i == 'great' else 0 for i in df['vote_count_binned']])))
 
     df.to_csv(out_file, encoding='utf-8', index=False)
 
