@@ -51,12 +51,8 @@ def process_dataset(df):
     df['vote_average_binned'] = pd.cut(df['vote_average'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
 
     # Bin budget and revenue
-<<<<<<< HEAD
     df['budget_binned'] = pd.cut(df['budget'], bins=[0,10000000,50000000,400000000], labels=['low', 'avg', 'high'])
-=======
-    df['budget_binned'] = pd.cut(df['budget'], bins=3, labels=['1st', '2nd', '3rd'])
     df['vote_count_binned'] = pd.cut(df['vote_count'], bins=3, labels=['1st', '2nd', '3rd'])
->>>>>>> 8651860c1454f432dcf9a53cfdd0de2307556f94
 
     # Compute a binary column for US vs not-US productions
     df['us'] = [1 if 'US' in x else 0 for x in df['production_countries']]
@@ -65,7 +61,7 @@ def process_dataset(df):
     df['revenue_binned'] = pd.cut(df['revenue'], bins=[0,10000000, 200000000,3000000000] , labels=['low', 'avg', 'high'])
 
     # bin vote_count: low, avg, high
-    df['vote_count_binned'] = pd.cut(df['vote_count'],  bins=[0, 200, 1300, 14000], labels=['bad', 'ok', 'great'])
+    df['vote_count_binned'] = pd.cut(df['vote_count'],  bins=[0, 200, 1300, 14000], labels=['low', 'avg', 'high'])
 
     # Compute a binary column for major vs. non-major productions
     major_list = np.zeros((len(df)))
