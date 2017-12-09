@@ -1,11 +1,18 @@
+import numpy
 import pandas as pd
-import numpy as np
 import os
 import requests
 
-data_path = r'./data'
+import load_dataset
+
+data_path = r'../data'
+
+movies_file = os.path.join(data_path, 'tmdb_5000_movies.csv')
+credits_file = os.path.join(data_path, 'tmdb_5000_credits.csv')
+people_file = os.path.join(data_path, 'person_ids.json')
+
 data_file = os.path.join(data_path, 'data.csv')
-out_file = os.path.join(data_path, 'train.csv')
+train_file = os.path.join(data_path, 'train.csv')
 
 major_companies = ["Walt Disney", "Warner", "20th Century Fox", "Universal Pictures", "Columbia Pictures", "Paramount Pictures"]
 macro_genres = {'action': ['Action','Adventure', 'Fantasy', 'Science Fiction', 'War', 'Western', 'History'],
@@ -13,9 +20,6 @@ macro_genres = {'action': ['Action','Adventure', 'Fantasy', 'Science Fiction', '
                 'light': ['Comedy', 'Family', 'Romance'],
                 'other': ['Foreign', 'Documentary', 'Music', 'Drama']}
                 # 'drama': ['Drama']}
-
-def load_dataset(path):
-    return pd.read_csv(path)
 
 def process_dataset(df):
     # Keep only columns we need
@@ -38,8 +42,8 @@ def process_dataset(df):
         'actor_3_name': 'str',
         'cast_popularity': 'float',
         'cast_popularity_binned': 'str',
-        'us': 'int',
-        'major': 'int',
+        'us': 'str',
+        'major': 'str',
         'revenue_binned': 'str',
     }
 
@@ -55,7 +59,7 @@ def process_dataset(df):
     df['vote_count_binned'] = pd.cut(df['vote_count'], bins=3, labels=['1st', '2nd', '3rd'])
 
     # Compute a binary column for US vs not-US productions
-    df['us'] = [1 if 'US' in x else 0 for x in df['production_countries']]
+    df['us'] = ["yes" if 'US' in x else "no" for x in df['production_countries']]
 
     # bin revenue: low, avg, high
     df['revenue_binned'] = pd.cut(df['revenue'], bins=[0,10000000, 200000000,3000000000] , labels=['low', 'avg', 'high'])
@@ -64,7 +68,7 @@ def process_dataset(df):
     df['vote_count_binned'] = pd.cut(df['vote_count'],  bins=[0, 200, 1300, 14000], labels=['low', 'avg', 'high'])
 
     # Compute a binary column for major vs. non-major productions
-    major_list = np.zeros((len(df)))
+    major_list = []
     genre_list = []
 
     for i in range(len(df)):
@@ -74,10 +78,11 @@ def process_dataset(df):
                 count = count + 1
 
         if count == 0:
-            major_list[i] = 0
+            major_list.append("no")
         else:
-            major_list[i] = 1
+            major_list.append("yes")
 
+        # take the macro genre whose intersection with the genre column is largest as the macro genre
         movie_genres = [len(set(df['genres'][i].split('|')).intersection(set(mg))) for mg in macro_genres.values()]
         macro_genre_index = movie_genres.index(max(movie_genres))
         genre_list.append(list(macro_genres.keys())[macro_genre_index])
@@ -91,24 +96,65 @@ def process_dataset(df):
 
     return df
 
-def build_cptables(df):
-    """
-        major,
-        genre,
-        us|major,
-        budget|major, genre, cast_popularity
-        cast_popularity|genre
-        movie_popularity|cast_popularity, genre, us, vote_avg_community, vote_avg_critics
-        vote_count_community|movie_popularity
-        vote_count_critics|movie_popularity
-        revenue|popularity
-    """
-    major_groupby = df.groupby('major')
-    major_us_groupby = df.groupby(['major', 'us'])
-    p_major = major_groupby.size().apply(lambda x: x/sum(major_groupby.size()))
-    p_us_major = [count/sum(group) for group in df.groupby(['major', 'us']).size() for count in group]
-    return df
 
+"""
+    major,
+    vote_avg,
+    genre|major,
+    us|major,
+    cast_popularity|budget,
+    budget|major,genre
+    vote_count_community|movie_popularity
+    vote_count_critics|movie_popularity
+    revenue|movie_popularity
+
+    this we don't have:
+        movie_popularity|genre, us, cast_popularity, vote_avg_community, vote_avg_critics
+"""
+def compute_cptables(df):
+    groups = [
+        df.groupby('major'),
+        df.groupby('vote_average_binned'),
+        df.groupby(['major', 'macro_genre']),
+        df.groupby(['major', 'us']),
+        df.groupby(['budget_binned', 'cast_popularity_binned']),
+        df.groupby(['major', 'macro_genre', 'budget_binned'])
+    ]
+
+    # we don't have this, we want to make inference about it
+    #moviepop_groupby = df.groupby(['macro_genre', 'us', 'cast_popularity_category', 'vote_average_category'])
+
+    # compute the cpt for each group.
+    # Each row in the grouping is a combination for the conditioning vars, with the last column being conditioned.
+    for g in groups:
+        # Retrieve counts for each grouping
+        group_count = g.size()
+        names = group_count.index.names
+
+        # see https://stackoverflow.com/questions/42854801/including-missing-combinations-of-values-in-a-pandas-groupby-aggregation
+        # we need to unstack each and every level to account for 0-count subgroups
+        # First unstack every subgroup and substitute missing values with 0, then put everything back.
+        for lvl in range(1, len(names)):
+            group_count = group_count.unstack(fill_value=0)
+
+        for lvl in range(1, len(names)):
+            group_count = group_count.stack()
+
+        if(len(names) > 1):
+            # group by all but the last column (the one we're conditioning on). Compute probabilities as the ratio
+            # of the subgroup count/the total for the previous group
+            levels = list(range(0, len(names)-1))
+            conditional = group_count.groupby(level=levels).apply(lambda subg: subg/subg.sum())
+    #         joint = group_count/len(df)
+            filename = '%s-%s.csv' % (names[-1], ','.join(names[0:-1]))
+        else:
+            conditional = group_count/group_count.sum()
+    #         joint = conditional
+            filename = '%s.csv' % names[0]
+
+        # Save cpt to csv files. One file per cpt
+        conditional[numpy.isnan(conditional)] = 0
+        conditional.to_csv(os.path.join(data_path, 'cpt', filename), header=True, encoding='utf-8')
 
 def update_metadata(df):
     r = requests('http://api.marcalencc.com/metacritic/movie/man-of-steel/details')
@@ -119,15 +165,20 @@ def update_metadata(df):
 
 
 def main():
-    df = load_dataset(data_file)
+    # load raw data and save it to data.csv
+    load_dataset.main(movies_file, credits_file, people_file, out_file=train_file)
+
+    # process the data and save it to train.csv
+    df = pd.read_csv(data_file)
     df = process_dataset(df)
-    # df = build_cptables(df)
+    df.to_csv(train_file, encoding='utf-8', index=False)
 
-    print ('low revenue: ',(sum([1 if i == 'bad' else 0 for i in df['vote_count_binned']])))
-    print ('avg revenue: ', (sum([1 if i == 'ok' else 0 for i in df['vote_count_binned']])))
-    print( 'hgh revenue: ', (sum([1 if i == 'great' else 0 for i in df['vote_count_binned']])))
+    # compute cpt tables and save them to cpt/. One file per cpt
+    compute_cptables(df)
 
-    df.to_csv(out_file, encoding='utf-8', index=False)
+    # print ('low revenue: ',(sum([1 if i == 'bad' else 0 for i in df['vote_count_binned']])))
+    # print ('avg revenue: ', (sum([1 if i == 'ok' else 0 for i in df['vote_count_binned']])))
+    # print( 'hgh revenue: ', (sum([1 if i == 'great' else 0 for i in df['vote_count_binned']])))
 
 
 if __name__ == '__main__':

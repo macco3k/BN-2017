@@ -1,12 +1,6 @@
 import pandas as pd
 import json
-import os
 import numpy as np
-
-data_path = r'./data'
-movies_file = os.path.join(data_path, 'tmdb_5000_movies.csv')
-credits_file = os.path.join(data_path, 'tmdb_5000_credits.csv')
-people_file = os.path.join(data_path, 'person_ids.json')
 
 def load_tmdb_movies(path):
     df = pd.read_csv(path)
@@ -84,13 +78,14 @@ def filter_dataset(df):
     return df[(df.budget > 0) & (df.revenue > 0)]
 
 
-movies = load_tmdb_movies(movies_file)
-credits = load_tmdb_credits(credits_file)
+def main(movies_file, credits_file, people_file, out_file):
+    movies = load_tmdb_movies(movies_file)
+    credits = load_tmdb_credits(credits_file)
 
-# Load actors popularity from the persons_id file
-people = [json.loads(l) for l in open(people_file, mode='r', encoding='utf-8')]
-popularity = {p['id']: p['popularity'] for p in people}
+    # Load actors popularity from the persons_id file
+    people = [json.loads(l) for l in open(people_file, mode='r', encoding='utf-8')]
+    popularity = {p['id']: p['popularity'] for p in people}
 
-converted_df = convert_dataset(movies, credits, popularity)
-filtered_df = filter_dataset(converted_df)
-filtered_df.to_csv(os.path.join(data_path, 'data.csv'), index=False, encoding='utf-8')
+    converted_df = convert_dataset(movies, credits, popularity)
+    filtered_df = filter_dataset(converted_df)
+    filtered_df.to_csv(out_file, index=False, encoding='utf-8')
