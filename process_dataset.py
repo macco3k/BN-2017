@@ -11,8 +11,8 @@ major_companies = ["Walt Disney", "Warner", "20th Century Fox", "Universal Pictu
 macro_genres = {'action': ['Action','Adventure', 'Fantasy', 'Science Fiction', 'War', 'Western', 'History'],
                 'dark': ['Crime', 'Thriller', 'Horror', 'Mystery'],
                 'light': ['Comedy', 'Family', 'Romance'],
-                'other': ['Foreign', 'Documentary', 'Music'],
-                'drama': ['Drama']}
+                'other': ['Foreign', 'Documentary', 'Music', 'Drama']}
+                # 'drama': ['Drama']}
 
 def load_dataset(path):
     return pd.read_csv(path)
@@ -31,6 +31,7 @@ def process_dataset(df):
         'vote_average': 'float',
         'vote_average_binned': 'str',
         'vote_count': 'int',
+        'vote_count_binned': 'str',
         'director_name': 'str',
         'actor_1_name': 'str',
         'actor_2_name': 'str',
@@ -40,7 +41,6 @@ def process_dataset(df):
         'us': 'int',
         'major': 'int',
         'revenue_binned': 'str',
-        'vote_count_binned':'str'
     }
 
     # Aggregate all cast members' popularity together, normalize and bin
