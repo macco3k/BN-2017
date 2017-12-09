@@ -3,7 +3,7 @@ import json
 import os
 import numpy as np
 
-data_path = r'./'
+data_path = r'./data'
 movies_file = os.path.join(data_path, 'tmdb_5000_movies.csv')
 credits_file = os.path.join(data_path, 'tmdb_5000_credits.csv')
 people_file = os.path.join(data_path, 'person_ids.json')
