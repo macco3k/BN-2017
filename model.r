@@ -1,52 +1,44 @@
-require(gRain);
+# require(gRain);
+library(bnlearn)
 
 data_path = 'D:\\OneDrive\\Documenti\\Radboud\\2017\\Bayesian Networks\\Assignment 1\\data\\cpt'
-file.path(data_path, 'major.csv')
 
 # Read CSV into R
 # major,
-# genre,
-# cast_popularity,
 # vote_avg,
+# genre|major,
 # us|major,
-# cast_popularity|genre
-# budget|major, genre, cast_popularity
-# movie_popularity|genre, us, cast_popularity, vote_avg_community, vote_avg_critics
+# cast_popularity|budget,
+# budget|major,genre
 # vote_count_community|movie_popularity
 # vote_count_critics|movie_popularity
 # revenue|movie_popularity
   
-data <- read.csv(file.path(data_path, 'major.csv'))
-major <- cptable(~major, values=data$X0)
-data <- read.csv(file.path(data_path, 'us-major.csv'))
-us.major <- cptable(~us|major, values=data$X0)
-data <- read.csv(file.path(data_path, 'macro_genre-major.csv'))
-major.macro_genre <- cptable(~genre|major, values=data$X0)
-data <- read.csv(file.path(data_path, 'cast_popularity_binned-major.csv'))
-major.cast_pop <- cptable(~cast_pop|major, values=data$X0)
+ny <- c("no", "yes")
+g <- c("action","dark","light","other")
+bog <- c("bad", "ok", "great")
+lah <- c("low", "avg", "high")
 
-data <- read.csv(file.path(data_path, 'macro_genre.csv'))
-genre <- cptable(~genre, values=data$X0)
-data <- read.csv(file.path(data_path, 'cast_popularity_binned-macro_genre.csv'))
-cast_pop.genre <- cptable(~cast_pop|genre, values=data$X0, levels=unique(data$cast_pop))
+d <- read.csv(file.path(data_path, 'major.csv'))
+cptMajor <- matrix(d$X0, ncol=2, dimnames=list(NULL, ny))
 
-data <- read.csv(file.path(data_path, 'cast_popularity_binned.csv'))
-cast_pop <- cptable(~cast_pop, values=data$X0)
+d <- read.csv(file.path(data_path, 'macro_genre-major.csv'))
+cptGenre <- data.matrix(d$X0)
+dim(cptGenre) = c(4,2)
+dimnames(cptGenre)=list("genre"=g, "major"=ny)
 
-data <- read.csv(file.path(data_path, 'vote_average_binned.csv'))
-vote_avg <- cptable(~vote_avg, values=data$X0)
+# d <- read.csv(file.path(data_path, 'cast_popularity_binned.csv'))
+# cptCast <- matrix(d$X0, ncol=3, dimnames=list(NULL, c("1st","2nd","3rd")))
 
-data <- read.csv(file.path(data_path, 'budget_binned-major,macro_genre,cast_popularity_binned.csv'))
-budget.major.genre.cast_pop <- cptable(~us|major, values=data$X0)
+# data <- read.csv(file.path(data_path, 'vote_average_binned.csv'))
+# vote_avg <- cptable(~vote_avg, values=data$X0)
 
+d <- read.csv(file.path(data_path, 'budget_binned-major,macro_genre.csv'))
+cptBudget <- data.matrix(d$X0)
 
-plist <- compileCPT(list(major, 
-                         us.major, 
-                         major.macro_genre, 
-                         major.cast_pop, 
-                         genre, 
-                         cast_pop, 
-                         cast_pop.genre, 
-                         budget.major.genre.cast_pop,
-                         vote_avg))
+dim(cptBudget) = c(3,4,2)
+dimnames(cptBudget) = list("budget"=lah,"genre"=g, "major"=ny)
 
+net = model2network("[major][genre][budget|major:genre]")
+dfit = custom.fit(net, dist=list(major=cptMajor, genre=cptGenre, budget=cptBudget))
+dfit
