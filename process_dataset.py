@@ -5,7 +5,7 @@ import requests
 
 import load_dataset
 
-data_path = r'../data'
+data_path = r'./data'
 
 movies_file = os.path.join(data_path, 'tmdb_5000_movies.csv')
 credits_file = os.path.join(data_path, 'tmdb_5000_credits.csv')

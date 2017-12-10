@@ -2,6 +2,7 @@
 library(bnlearn)
 
 data_path = 'D:\\OneDrive\\Documenti\\Radboud\\2017\\Bayesian Networks\\Assignment 1\\data\\cpt'
+data_path = 'data/cpt'
 
 # Read CSV into R
 # major,
@@ -29,7 +30,7 @@ dimnames(cptGenre)=list("genre"=g, "major"=ny)
 
 # d <- read.csv(file.path(data_path, 'cast_popularity_binned.csv'))
 # cptCast <- matrix(d$X0, ncol=3, dimnames=list(NULL, c("1st","2nd","3rd")))
-
+# 
 # data <- read.csv(file.path(data_path, 'vote_average_binned.csv'))
 # vote_avg <- cptable(~vote_avg, values=data$X0)
 
@@ -42,3 +43,31 @@ dimnames(cptBudget) = list("budget"=lah,"genre"=g, "major"=ny)
 net = model2network("[major][genre][budget|major:genre]")
 dfit = custom.fit(net, dist=list(major=cptMajor, genre=cptGenre, budget=cptBudget))
 dfit
+
+# defining the network arcs from the picture
+
+defined_net_string = "[major][genre|major][budget|major:genre][us|major][cast_popularity|budget][vote_avg_community][vote_avg_critics][movie_popularity|vote_avg_critics:vote_avg_community:cast_popularity:genre:us][vote_count_community|movie_popularity][vote_count_critics|movie_popularity][revenue|movie_popularity]"
+defined_net = model2network(defined_net_string)
+graphviz.plot(defined_net)
+
+fitted = custom.fit(defined_net, list(
+  major = cptMajor,
+  genre = cptGenre,
+  budget = cptBudget
+))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
