@@ -30,7 +30,7 @@ def process_dataset(df):
         'genres': 'str',
         'macro_genre': 'str',
         'original_language': 'str',
-        #'popularity': 'float',
+        'popularity': 'float',
         'revenue': 'uint',
         'vote_average': 'float',
         'vote_average_binned': 'str',
@@ -45,11 +45,12 @@ def process_dataset(df):
         'us': 'str',
         'major': 'str',
         'revenue_binned': 'str',
+        'popularity_binned': 'str',
     }
 
     # Aggregate all cast members' popularity together, normalize and bin
     df['cast_popularity'] = df['director_popularity'] + df['cast_popularity']
-    df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=3, labels=['1st', '2nd', '3rd'])
+    df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=[0,15,35,200], labels=['low', 'avg', 'high'])
 
     # Bin vote average
     df['vote_average_binned'] = pd.cut(df['vote_average'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
@@ -66,6 +67,10 @@ def process_dataset(df):
 
     # bin vote_count: low, avg, high
     df['vote_count_binned'] = pd.cut(df['vote_count'],  bins=[0, 200, 1300, 14000], labels=['low', 'avg', 'high'])
+
+    # bin popularity
+    df['popularity_binned'] = pd.cut(df['popularity'], bins=[0, 10, 40, 1000], labels=['low', 'avg', 'high'])
+
 
     # Compute a binary column for major vs. non-major productions
     major_list = []
@@ -176,9 +181,9 @@ def main():
     # compute cpt tables and save them to cpt/. One file per cpt
     compute_cptables(df)
 
-    # print ('low revenue: ',(sum([1 if i == 'bad' else 0 for i in df['vote_count_binned']])))
-    # print ('avg revenue: ', (sum([1 if i == 'ok' else 0 for i in df['vote_count_binned']])))
-    # print( 'hgh revenue: ', (sum([1 if i == 'great' else 0 for i in df['vote_count_binned']])))
+    #print ('low : ', (sum([1 if i == 'low' else 0 for i in df['cast_popularity_binned']])))
+    #print ('avg : ', (sum([1 if i == 'avg' else 0 for i in df['cast_popularity_binned']])))
+    #print( 'hgh : ', (sum([1 if i == 'high' else 0 for i in df['cast_popularity_binned']])))
 
 
 if __name__ == '__main__':
