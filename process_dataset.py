@@ -1,11 +1,13 @@
 import numpy
 import pandas as pd
 import os
+import re
 import requests
+import unidecode
 
 import load_dataset
 
-data_path = r'./data'
+data_path = r'../data'
 
 movies_file = os.path.join(data_path, 'tmdb_5000_movies.csv')
 credits_file = os.path.join(data_path, 'tmdb_5000_credits.csv')
@@ -34,8 +36,12 @@ def process_dataset(df):
         'revenue': 'uint',
         'vote_average': 'float',
         'vote_average_binned': 'str',
-        'vote_count': 'int',
+        'vote_count': 'uint',
         'vote_count_binned': 'str',
+        'critics_vote': 'float',
+        'critics_vote_binned': 'str',
+        'critics_count': 'uint',
+        # 'critics_count_binned': 'str',
         'director_name': 'str',
         'actor_1_name': 'str',
         'actor_2_name': 'str',
@@ -48,29 +54,28 @@ def process_dataset(df):
         'popularity_binned': 'str',
     }
 
-    # Aggregate all cast members' popularity together, normalize and bin
+    # Aggregate all cast members' popularity together and bin
     df['cast_popularity'] = df['director_popularity'] + df['cast_popularity']
-    df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=[0,15,35,200], labels=['low', 'avg', 'high'])
+    df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=[0, 15, 35, 200], labels=['low', 'avg', 'high'])
 
-    # Bin vote average
+    # Bin vote average for both community and critics
     df['vote_average_binned'] = pd.cut(df['vote_average'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
+    df['critics_vote_binned'] = pd.cut(df['critics_vote'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
 
     # Bin budget and revenue
     df['budget_binned'] = pd.cut(df['budget'], bins=[0,10000000,50000000,400000000], labels=['low', 'avg', 'high'])
-    df['vote_count_binned'] = pd.cut(df['vote_count'], bins=3, labels=['1st', '2nd', '3rd'])
+    df['revenue_binned'] = pd.cut(df['revenue'], bins=[0, 10000000, 200000000, 3000000000], labels=['low', 'avg', 'high'])
+
+    df['vote_count_binned'] = pd.cut(df['vote_count'], bins=[0, 200, 1300, 14000], labels=['low', 'avg', 'high'])
+    df['popularity_binned'] = pd.cut(df['popularity'], bins=[0, 10, 40, 1000], labels=['low', 'avg', 'high'])
+
+    # If something is still missing, just  replace it with the community average (set the count as avg)
+    zero_critics = df[df['critics_count'] == 0]
+    zero_critics['critics_vote_binned'] = zero_critics['vote_average_binned']
+    zero_critics['critics_count_binned'] = 'avg'
 
     # Compute a binary column for US vs not-US productions
     df['us'] = ["yes" if 'US' in x else "no" for x in df['production_countries']]
-
-    # bin revenue: low, avg, high
-    df['revenue_binned'] = pd.cut(df['revenue'], bins=[0,10000000, 200000000,3000000000] , labels=['low', 'avg', 'high'])
-
-    # bin vote_count: low, avg, high
-    df['vote_count_binned'] = pd.cut(df['vote_count'],  bins=[0, 200, 1300, 14000], labels=['low', 'avg', 'high'])
-
-    # bin popularity
-    df['popularity_binned'] = pd.cut(df['popularity'], bins=[0, 10, 40, 1000], labels=['low', 'avg', 'high'])
-
 
     # Compute a binary column for major vs. non-major productions
     major_list = []
@@ -87,7 +92,8 @@ def process_dataset(df):
         else:
             major_list.append("yes")
 
-        # take the macro genre whose intersection with the genre column is largest as the macro genre
+        # take the macro genre whose intersection with the genre column is largest as the macro genre.
+        # Split draws by taking the first index
         movie_genres = [len(set(df['genres'][i].split('|')).intersection(set(mg))) for mg in macro_genres.values()]
         macro_genre_index = movie_genres.index(max(movie_genres))
         genre_list.append(list(macro_genres.keys())[macro_genre_index])
@@ -161,20 +167,66 @@ def compute_cptables(df):
         conditional[numpy.isnan(conditional)] = 0
         conditional.to_csv(os.path.join(data_path, 'cpt', filename), header=True, encoding='utf-8')
 
-def update_metadata(df):
-    r = requests('http://api.marcalencc.com/metacritic/movie/man-of-steel/details')
-    if r.status_code != requests.codes.ok:
-        r.raise_for_status()
 
-    content = r.json()
+def get_critics_rating(title):
+    print('Sending request for %s' % title)
 
+    title = unidecode.unidecode(title)
+    r = requests.get(r"http://api.marcalencc.com/metacritic/movie/{0}".format(title))
+    if r.status_code == 200:
+        try:
+            rating = r.json()[0]['Rating']
+            return rating['CriticRating'] / 10, rating['CriticReviewCount']
+        except KeyError:
+            return 0, 0
+
+    return 0, 0
+
+
+def retrieve_critics_data(df):
+    """
+    Retrieve additional data (e.g. metacritic's critics review)
+    :param df: the dataframe to be updated
+    :return: the updated dataframe
+    """
+    # First replace .:, and ' &' with the empty string. Then, replace non letters/digits with a dash
+    titles = df['title'].apply(lambda x: re.sub("[^\w']", "-", re.sub("(?:[.:,]|\s&)", "", x)))
+
+    ratings = titles.apply(get_critics_rating)
+
+    df['critics_vote'] = [r[0] for r in ratings]
+    df['critics_count'] = [r[1] for r in ratings]
+
+    return df
+
+
+def update_critics(df, chunksize=50):
+    if 'critics_count' not in list(df.columns):
+        df['critics_vote'] = 0
+        df['critics_count'] = 0
+
+    # Do this in chunks and save every now and then
+    # Filter out rows which already has critics data
+    zero_count = df[df['critics_count'] == 0]
+    iterations = numpy.math.floor(len(zero_count)/chunksize)+1
+
+    for i in range(iterations):
+        chunk = zero_count.iloc[i*chunksize:(i+1)*chunksize]
+        df.iloc[chunk.index] = retrieve_critics_data(chunk)
+
+        df.to_csv(data_file, encoding='utf-8')
+        print('%d movies done' % ((i+1)*chunksize))
+
+    return df
 
 def main():
     # load raw data and save it to data.csv
-    load_dataset.main(movies_file, credits_file, people_file, out_file=train_file)
+    # load_dataset.main(movies_file, credits_file, people_file, out_file=train_file)
 
     # process the data and save it to train.csv
-    df = pd.read_csv(data_file)
+    df = pd.read_csv(data_file, encoding='utf-8')
+    # df = update_critics(df)
+
     df = process_dataset(df)
     df.to_csv(train_file, encoding='utf-8', index=False)
 
