@@ -40,13 +40,13 @@ cptBudget <- data.matrix(d$X0)
 dim(cptBudget) = c(3,4,2)
 dimnames(cptBudget) = list("budget"=lah,"genre"=g, "major"=ny)
 
-net = model2network("[major][genre][budget|major:genre]")
-dfit = custom.fit(net, dist=list(major=cptMajor, genre=cptGenre, budget=cptBudget))
-dfit
+# net = model2network("[major][genre][budget|major:genre]")
+# dfit = custom.fit(net, dist=list(major=cptMajor, genre=cptGenre, budget=cptBudget))
+# dfit
 
 # defining the network arcs from the picture
 
-defined_net_string = "[major][genre|major][budget|major:genre][us|major][cast_popularity|budget][vote_avg_community][vote_avg_critics][movie_popularity|vote_avg_critics:vote_avg_community:cast_popularity:genre:us][vote_count_community|movie_popularity][vote_count_critics|movie_popularity][revenue|movie_popularity]"
+defined_net_string = "[major][genre|major][budget|major:genre][us|major][cast_popularity|budget][community_vote][critics_vote][movie_popularity|critics_vote:community_vote:cast_popularity:genre:us][community_count|movie_popularity][critics_count|movie_popularity][revenue|movie_popularity]"
 defined_net = model2network(defined_net_string)
 graphviz.plot(defined_net)
 
@@ -56,18 +56,8 @@ fitted = custom.fit(defined_net, list(
   budget = cptBudget
 ))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# TODO test independences
+# TODO inference
+# - predict a movie's popularity
+# - predict the prior for popularity
+# - ask the network to get the cpt for popularity
