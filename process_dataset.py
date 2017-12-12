@@ -62,6 +62,8 @@ def process_dataset(df):
     # Bin vote average for both community and critics
     df['vote_average_binned'] = pd.cut(df['vote_average'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
     df['critics_vote_binned'] = pd.cut(df['critics_vote'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
+    df['vote_count_binned'] = pd.qcut(df['vote_count'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
+    df['critics_count_binned'] = pd.qcut(df['critics_count'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
 
     # Bin budget and revenue
     # df['budget_binned'] = pd.cut(df['budget'], bins=[0,10000000,50000000,400000000], labels=['low', 'avg', 'high'])
@@ -73,11 +75,10 @@ def process_dataset(df):
     df['budget_binned'] = pd.qcut(df['budget'], q=[0, .25, .75, 1], labels=['low', 'avg', 'high'])
     df['revenue_binned'] = pd.qcut(df['revenue'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
 
-    df['vote_count_binned'] = pd.qcut(df['vote_count'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
     df['popularity_binned'] = pd.qcut(df['popularity'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
 
     # If something is still missing, just  replace it with the community average (set the count as avg)
-    zero_critics = df[df['critics_vote'] == 0]
+    zero_critics = df[df['critics_count'] == 0]
     df.loc[zero_critics.index, 'critics_vote_binned'] = zero_critics['vote_average_binned']
     df.loc[zero_critics.index, 'critics_count_binned'] = 'avg'
 
@@ -112,7 +113,8 @@ def process_dataset(df):
     df = df[list(cols.keys())]
     df = df.astype(dtype=cols, copy=True)
 
-    return df
+    # Discard all remaining 0 reviews movies
+    return df[df['vote_count'] > 0]
 
 
 """
