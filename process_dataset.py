@@ -7,7 +7,7 @@ import unidecode
 
 import load_dataset
 
-data_path = r'../data'
+data_path = r'./data'
 
 movies_file = os.path.join(data_path, 'tmdb_5000_movies.csv')
 credits_file = os.path.join(data_path, 'tmdb_5000_credits.csv')
@@ -41,7 +41,7 @@ def process_dataset(df):
         'critics_vote': 'float',
         'critics_vote_binned': 'str',
         'critics_count': 'uint',
-        # 'critics_count_binned': 'str',
+        'critics_count_binned': 'str',
         'director_name': 'str',
         'actor_1_name': 'str',
         'actor_2_name': 'str',
@@ -56,23 +56,30 @@ def process_dataset(df):
 
     # Aggregate all cast members' popularity together and bin
     df['cast_popularity'] = df['director_popularity'] + df['cast_popularity']
-    df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=[0, 15, 35, 200], labels=['low', 'avg', 'high'])
+    # df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=[0, 15, 35, 200], labels=['low', 'avg', 'high'])
+    df['cast_popularity_binned'] = pd.qcut(df['cast_popularity'], q=[0, .25, .75, 1], labels=['low', 'avg', 'high'])
 
     # Bin vote average for both community and critics
     df['vote_average_binned'] = pd.cut(df['vote_average'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
     df['critics_vote_binned'] = pd.cut(df['critics_vote'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
 
     # Bin budget and revenue
-    df['budget_binned'] = pd.cut(df['budget'], bins=[0,10000000,50000000,400000000], labels=['low', 'avg', 'high'])
-    df['revenue_binned'] = pd.cut(df['revenue'], bins=[0, 10000000, 200000000, 3000000000], labels=['low', 'avg', 'high'])
+    # df['budget_binned'] = pd.cut(df['budget'], bins=[0,10000000,50000000,400000000], labels=['low', 'avg', 'high'])
+    # df['revenue_binned'] = pd.cut(df['revenue'], bins=[0, 10000000, 200000000, 3000000000], labels=['low', 'avg', 'high'])
+    #
+    # df['vote_count_binned'] = pd.cut(df['vote_count'], bins=[0, 200, 1300, 14000], labels=['low', 'avg', 'high'])
+    # df['popularity_binned'] = pd.cut(df['popularity'], bins=[0, 10, 40, 1000], labels=['low', 'avg', 'high'])
+    # Just 'make it normal'
+    df['budget_binned'] = pd.qcut(df['budget'], q=[0, .25, .75, 1], labels=['low', 'avg', 'high'])
+    df['revenue_binned'] = pd.qcut(df['revenue'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
 
-    df['vote_count_binned'] = pd.cut(df['vote_count'], bins=[0, 200, 1300, 14000], labels=['low', 'avg', 'high'])
-    df['popularity_binned'] = pd.cut(df['popularity'], bins=[0, 10, 40, 1000], labels=['low', 'avg', 'high'])
+    df['vote_count_binned'] = pd.qcut(df['vote_count'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
+    df['popularity_binned'] = pd.qcut(df['popularity'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
 
     # If something is still missing, just  replace it with the community average (set the count as avg)
-    zero_critics = df[df['critics_count'] == 0]
-    zero_critics['critics_vote_binned'] = zero_critics['vote_average_binned']
-    zero_critics['critics_count_binned'] = 'avg'
+    zero_critics = df[df['critics_vote'] == 0]
+    df.loc[zero_critics.index, 'critics_vote_binned'] = zero_critics['vote_average_binned']
+    df.loc[zero_critics.index, 'critics_count_binned'] = 'avg'
 
     # Compute a binary column for US vs not-US productions
     df['us'] = ["yes" if 'US' in x else "no" for x in df['production_countries']]
@@ -214,7 +221,7 @@ def update_critics(df, chunksize=50):
         chunk = zero_count.iloc[i*chunksize:(i+1)*chunksize]
         df.iloc[chunk.index] = retrieve_critics_data(chunk)
 
-        df.to_csv(data_file, encoding='utf-8')
+        df.to_csv(data_file, encoding='utf-8', index=False)
         print('%d movies done' % ((i+1)*chunksize))
 
     return df
