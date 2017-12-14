@@ -17,7 +17,7 @@ data_file = os.path.join(data_path, 'data.csv')
 train_file = os.path.join(data_path, 'train.csv')
 
 major_companies = ["Walt Disney", "Warner", "20th Century Fox", "Universal Pictures", "Columbia Pictures", "Paramount Pictures"]
-macro_genres = {'action': ['Action','Adventure', 'Fantasy', 'Science Fiction', 'War', 'Western', 'History'],
+macro_genres = {'action': ['Action', 'Adventure', 'Fantasy', 'Science Fiction', 'War', 'Western', 'History'],
                 'dark': ['Crime', 'Thriller', 'Horror', 'Mystery'],
                 'light': ['Comedy', 'Family', 'Romance'],
                 'other': ['Foreign', 'Documentary', 'Music', 'Drama']}
@@ -50,37 +50,45 @@ def process_dataset(df):
         'cast_popularity_binned': 'str',
         'us': 'str',
         'major': 'str',
-        'revenue_binned': 'str',
+        'roi': 'float',
+        'roi_binned': 'str',
         'popularity_binned': 'str',
     }
+
+    # Standard quantiles fro low/average/high
+    lah = [0, .25, .75, 1]
+    lah_lbls = ['low', 'avg', 'high']
 
     # Aggregate all cast members' popularity together and bin
     df['cast_popularity'] = df['director_popularity'] + df['cast_popularity']
     # df['cast_popularity_binned'] = pd.cut(df['cast_popularity'], bins=[0, 15, 35, 200], labels=['low', 'avg', 'high'])
-    df['cast_popularity_binned'] = pd.qcut(df['cast_popularity'], q=[0, .25, .75, 1], labels=['low', 'avg', 'high'])
+    df['cast_popularity_binned'] = pd.qcut(df['cast_popularity'], q=lah, labels=lah_lbls)
+
+    # Replace 0 votes critics with the avg
+    zero_critics = df[df['critics_count'] == 0]
+    df.loc[zero_critics.index, 'critics_vote'] = df.loc[~df.index.isin(zero_critics.index), 'critics_vote'].mean()
+    df.loc[zero_critics.index, 'critics_count'] = df.loc[~df.index.isin(zero_critics.index), 'critics_count'].mean()
 
     # Bin vote average for both community and critics
     df['vote_average_binned'] = pd.cut(df['vote_average'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
     df['critics_vote_binned'] = pd.cut(df['critics_vote'], bins=[0, 5, 7, 10], labels=['bad', 'ok', 'great'])
-    df['vote_count_binned'] = pd.qcut(df['vote_count'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
-    df['critics_count_binned'] = pd.qcut(df['critics_count'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
+    df['vote_count_binned'] = pd.qcut(df['vote_count'], q=lah, labels=lah_lbls)
+    df['critics_count_binned'] = pd.qcut(df['critics_count'], q=lah, labels=lah_lbls)
 
-    # Bin budget and revenue
-    # df['budget_binned'] = pd.cut(df['budget'], bins=[0,10000000,50000000,400000000], labels=['low', 'avg', 'high'])
-    # df['revenue_binned'] = pd.cut(df['revenue'], bins=[0, 10000000, 200000000, 3000000000], labels=['low', 'avg', 'high'])
-    #
-    # df['vote_count_binned'] = pd.cut(df['vote_count'], bins=[0, 200, 1300, 14000], labels=['low', 'avg', 'high'])
-    # df['popularity_binned'] = pd.cut(df['popularity'], bins=[0, 10, 40, 1000], labels=['low', 'avg', 'high'])
     # Just 'make it normal'
-    df['budget_binned'] = pd.qcut(df['budget'], q=[0, .25, .75, 1], labels=['low', 'avg', 'high'])
-    df['revenue_binned'] = pd.qcut(df['revenue'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
+    df['budget_binned'] = pd.qcut(df['budget'], q=lah, labels=lah_lbls)
+    df['popularity_binned'] = pd.qcut(df['popularity'], q=lah, labels=lah_lbls)
 
-    df['popularity_binned'] = pd.qcut(df['popularity'], q=[0, 0.25, 0.75, 1], labels=['low', 'avg', 'high'])
+    # Use ROI as a measure of profitability.
+    df['roi'] = (df['revenue'] - df['budget']) / df['budget']
 
-    # If something is still missing, just  replace it with the community average (set the count as avg)
-    zero_critics = df[df['critics_count'] == 0]
-    df.loc[zero_critics.index, 'critics_vote_binned'] = zero_critics['vote_average_binned']
-    df.loc[zero_critics.index, 'critics_count_binned'] = 'avg'
+    # ROIs of up to 0 are flop (no net gain).
+    # For those movies with a ROI > 0, bin them according to the standard 25-50-25 bins.
+    df['roi_binned'] = ''
+    neg = df[df['roi'] <= 0].index
+    pos = df[df['roi'] > 0].index
+    df.loc[neg, 'roi_binned'] = 'flop'
+    df.loc[pos, 'roi_binned'] = pd.qcut(df.loc[pos, 'roi'], q=lah, labels=lah_lbls)
 
     # Compute a binary column for US vs not-US productions
     df['us'] = ["yes" if 'US' in x else "no" for x in df['production_countries']]
