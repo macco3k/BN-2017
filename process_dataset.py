@@ -248,7 +248,7 @@ def main():
     df.to_csv(train_file, encoding='utf-8', index=False)
 
     # compute cpt tables and save them to cpt/. One file per cpt
-    compute_cptables(df)
+    # compute_cptables(df)
 
     #print ('low : ', (sum([1 if i == 'low' else 0 for i in df['cast_popularity_binned']])))
     #print ('avg : ', (sum([1 if i == 'avg' else 0 for i in df['cast_popularity_binned']])))
