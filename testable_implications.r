@@ -1,8 +1,38 @@
-testImplications <- function( covariance.matrix, sample.size ){
-  library(ggm)
-  tst <- function(i){ pcor.test( pcor(i,covariance.matrix), length(i)-2, sample.size )$pvalue }
-  tos <- function(i){ paste(i,collapse=" ") }
-  implications <- list(c("revenue","budget","major","genre","cast_popularity"),
+getImplications <- function(){
+  implications <- list(c("major","movie_popularity","us","cast_popularity","genre"),
+                       c("major","roi","movie_popularity"),
+                       c("major","roi","us","cast_popularity","genre"),
+                       c("major","community_vote","cast_popularity"),
+                       c("major","critics_vote"),
+                       c("us","budget","major"),
+                       c("us","genre","major"),
+                       c("us","cast_popularity","major"),
+                       c("us","roi","movie_popularity"),
+                       c("us","community_vote","cast_popularity"),
+                       c("us","community_vote","major"),
+                       c("us","critics_vote"),
+                       c("budget","movie_popularity","us","cast_popularity","genre"),
+                       c("budget","movie_popularity","cast_popularity","genre","major"),
+                       c("budget","roi","movie_popularity"),
+                       c("budget","roi","us","cast_popularity","genre"),
+                       c("budget","roi","cast_popularity","genre","major"),
+                       c("budget","community_vote","cast_popularity"),
+                       c("budget","critics_vote"),
+                       c("genre","cast_popularity","budget","major"),
+                       c("genre","roi","movie_popularity"),
+                       c("genre","community_vote","cast_popularity"),
+                       c("genre","community_vote","budget","major"),
+                       c("genre","critics_vote"),
+                       c("cast_popularity","roi","movie_popularity"),
+                       c("cast_popularity","critics_vote"),
+                       c("roi","community_vote","movie_popularity"),
+                       c("roi","critics_vote","movie_popularity"),
+                       c("community_vote","critics_vote"))
+  
+  implications
+}
+
+implications <- list(c("revenue","budget","major","genre","cast_popularity"),
                        c("revenue","budget","genre","us","cast_popularity"),
                        c("revenue","budget","movie_popularity"),
                        c("revenue","genre","movie_popularity"),
@@ -59,7 +89,3 @@ testImplications <- function( covariance.matrix, sample.size ){
                        c("critics_vote","community_count","movie_popularity"),
                        c("critics_vote","critics_count","movie_popularity"),
                        c("community_count","critics_count","movie_popularity"))
-  data.frame( implication=unlist(lapply(implications,tos)),
-              pvalue=unlist( lapply( implications, tst ) ) )
-  
-}
