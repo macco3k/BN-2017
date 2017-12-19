@@ -34,6 +34,7 @@ def process_dataset(df):
         'original_language': 'str',
         'popularity': 'float',
         'revenue': 'uint',
+        'revenue_binned': 'str',
         'vote_average': 'float',
         'vote_average_binned': 'str',
         'vote_count': 'uint',
@@ -77,6 +78,7 @@ def process_dataset(df):
 
     # Just 'make it normal'
     df['budget_binned'] = pd.qcut(df['budget'], q=lah, labels=lah_lbls)
+    df['revenue_binned'] = pd.qcut(df['revenue'], q=lah, labels=lah_lbls)
     df['popularity_binned'] = pd.qcut(df['popularity'], q=lah, labels=lah_lbls)
 
     # Use ROI as a measure of profitability.
@@ -118,11 +120,41 @@ def process_dataset(df):
     df['macro_genre'] = genre_list
 
     # Only keep columns we're going to use for the network
-    df = df[list(cols.keys())]
-    df = df.astype(dtype=cols, copy=True)
+    copy_df = df[list(cols.keys())]
+    copy_df = copy_df.astype(dtype=cols, copy=True)
 
+    # rename columns
+    copy_df.columns = [
+        'title',
+        'budget_',
+        'budget',
+        'genres',
+        'genre',
+        'original_language',
+        'popularity_',
+        'revenue_',
+        'revenue',
+        'community_vote_',
+        'community_vote',
+        'community_count_',
+        'community_count',
+        'critics_vote_',
+        'critics_vote',
+        'critics_count_',
+        'critics_count',
+        'director_name',
+        'actor_1_name',
+        'actor_2_name',
+        'actor_3_name',
+        'cast_popularity_',
+        'cast_popularity',
+        'us',
+        'major',
+        'roi_',
+        'roi',
+        'popularity']
     # Discard all remaining 0 reviews movies
-    return df[df['vote_count'] > 0]
+    return copy_df[copy_df['community_vote_'] > 0]
 
 
 """

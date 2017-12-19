@@ -2,12 +2,18 @@
 library(bnlearn)
 library(Rgraphviz)
 
-root_path = 'D:\\OneDrive\\Documenti\\Radboud\\2017\\Bayesian Networks\\Assignment 1\\src'
+root_path = 'D:\\Documents\\Github\\BN-2017'
 data_path = file.path(root_path, 'data')
-source(file.path(root_path, 'testable_implications.r'))
+source(file.path(root_path, 'testable_implications_v3a.r'))
+source(file.path(root_path, 'helper.r'))
 
 # defining the network arcs from the picture
-defined_net_string = "[major][genre|major][budget|major:genre][us|major][cast_popularity|budget:major][community_count][community_vote|community_count:cast_popularity][critics_vote|critics_count][critics_count][movie_popularity|critics_vote:community_count:community_vote:cast_popularity:genre:us][roi|movie_popularity]"
+# v2
+# defined_net_string = "[major][genre|major][budget|major:genre][us|major][cast_popularity|budget][community_count|movie_popularity][community_vote][critics_vote|critics_count][critics_count][movie_popularity|critics_vote:community_count:community_vote:cast_popularity:genre:us][roi|movie_popularity]"
+
+# v3
+defined_net_string = "[major][genre|major][budget|major][us|major][cast_popularity|budget][community_count|us:genre:budget][community_vote|community_count][critics_count|us:genre:budget][critics_vote|critics_count][roi|cast_popularity:community_vote:critics_vote]"
+
 defined_net = model2network(defined_net_string)
 graphviz.plot(defined_net)
 
@@ -21,25 +27,34 @@ t <- t[c('major',
          'vote_count_binned',
          'critics_vote_binned',
          'critics_count_binned',
-         'roi_binned',
-         'popularity_binned')]
+         'roi_binned')]
+         # 'revenue_binned',
+         # 'popularity_binned')]
 
-names(t) = c('major','genre','budget','us','cast_popularity','community_vote', 'community_count', 'critics_vote', 'critics_count', 'roi', 'movie_popularity')
+names(t) = c('major','genre','budget','us','cast_popularity','community_vote', 'community_count', 'critics_vote', 'critics_count', 'roi')
 fitted <- bn.fit(defined_net, data=t)
 
 # TODO test independences
 # Look into bnlearn::ci.test or chisq.test
 implications <- getImplications()
 count <- 1
-citest_list <- list()
-citest.p.value <- list()
-for (line in implications)
+citest_list <- c()
+citest.p.value <- c()
+citest.names <- c()
+
+for (i in implications)
 {
-  test <- ci.test(x = line[1] , y = line[2], z = c(line[-1:-2]), data = t, test="x2")
-  citest_list[[paste(count)]] <- test
-  citest.p.value[count] <- test$p.value
-  count <- count+1
+    print(i)
+    test <- ci.test(x = i[1] , y = i[2], z = c(i[-1:-2]), data = t, test="x2")
+    citest_list[count] <- test
+    citest.p.value[count] <- test$p.value
+    citest.names[count] = test$data.name
+    count <- count+1
 }
+
+df <- data.frame(names=citest.names, p.value=citest.p.value)
+# todo plot this with points and maybe prettier labels
+plot(df, las=2, xlab='')
 
 # TODO inference
 # - predict a movie's popularity
