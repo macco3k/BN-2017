@@ -4,3 +4,8 @@
 .Rhistory
 .vscode
 BN-2017.Rproj
+
+.RData
+.ipynb_checkpoints
+__pycache__
+
