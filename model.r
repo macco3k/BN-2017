@@ -89,3 +89,94 @@ df[df["RMSEA"] > 0.05,]
 #   - cpquery(fitted, event=(movie_popularity=='high'), evidence=TRUE) #no evidence
 # - ask the network to get the cpt for popularity (assuming we don't have the movie_popularity column)
 #   - see http://www.bnlearn.com/documentation/man/impute.html
+
+
+#What makes for a highly profitable movie?
+# Pr(roi=high | genre=action) vs. Pr(roi=high | genre=light)
+cpquery(fitted, (roi=='high'), (genre=='action'))
+cpquery(fitted, (roi=='high'), (genre=='dark'))
+cpquery(fitted, (roi=='high'), (genre=='light'))
+cpquery(fitted, (roi=='high'), (genre=='other'))
+
+#-----------------------------------------------------------------------------------------------------------
+
+#What are the odds of making a high profit for a non-major company? What if we want to go for a niche movie?
+#e.g. Pr(roi=high | major=no) vs. Pr(roi=~high | major=no)
+cpquery(fitted, (roi=='high'), (major=='yes'))
+cpquery(fitted, (roi!='high'), (major=='yes'))
+cpquery(fitted, (roi=='high'), (major=='no'))
+cpquery(fitted, (roi!='high'), (major=='no'))
+
+#e.g. Pr(roi=high | major=no, genre=other) vs. Pr(roi=~high | major=no, genre=other)
+cpquery(fitted, (roi=='high' & major=='no'), (genre=='action'))
+cpquery(fitted, (roi=='high' & major=='no'), (genre=='dark'))
+cpquery(fitted, (roi=='high' & major=='no'), (genre=='light'))
+cpquery(fitted, (roi=='high' & major=='no'), (genre=='other'))
+cpquery(fitted, (roi!='high'& major=='no'), (genre=='action'))
+
+#-----------------------------------------------------------------------------------------------------------
+
+#Does a highly popular cast get us higher votes? 
+#e.g. Pr(critics_vote=great & community_vote=great | cast=high)
+cpquery(fitted, (critics_vote=='great' & community_vote=='great'), (cast_popularity=='high'))
+cpquery(fitted, (critics_vote=='great' | community_vote=='great'), (cast_popularity=='high'))
+
+cpquery(fitted, (critics_vote=='great'), (cast_popularity=='high'))
+cpquery(fitted, (community_vote=='great'), (cast_popularity=='high'))
+cpquery(fitted, (critics_vote=='great'), (cast_popularity!='high'))
+cpquery(fitted, (community_vote=='great'), (cast_popularity!='high'))
+
+#e.g. Pr(critics_vote=great & community_vote=great | cast=~high)
+cpquery(fitted, (critics_vote=='great' & community_vote=='great'), (cast_popularity!='high'))
+cpquery(fitted, (critics_vote=='great' | community_vote=='great'), (cast_popularity!='high'))
+
+cpquery(fitted, (critics_vote=='great' & community_vote=='great'), (cast_popularity=='high'))
+cpquery(fitted, (critics_vote=='great' | community_vote=='great'), (cast_popularity=='high'))
+
+#-----------------------------------------------------------------------------------------------------------
+#How can we prevent our movie from being a flop?
+#e.g. Pr(roi=~flop | genre=? & cast_popularity=?)
+cpquery(fitted, (roi!='flop'), (genre=='action' & cast_popularity=='high'))
+cpquery(fitted, (roi!='flop'), (genre=='dark' & cast_popularity=='high'))
+cpquery(fitted, (roi!='flop'), (genre=='light' & cast_popularity=='high'))
+cpquery(fitted, (roi!='flop'), (genre=='other' & cast_popularity=='high'))
+
+cpquery(fitted, (roi!='flop'), (genre=='action' & cast_popularity!='high'))
+cpquery(fitted, (roi!='flop'), (genre=='dark' & cast_popularity!='high'))
+cpquery(fitted, (roi!='flop'), (genre=='light' & cast_popularity!='high'))
+cpquery(fitted, (roi!='flop'), (genre=='other' & cast_popularity!='high'))
+
+cpquery(fitted, (roi!='flop'), (genre=='action' ))
+cpquery(fitted, (roi!='flop'), (genre=='dark' ))
+cpquery(fitted, (roi!='flop'), (genre=='light' ))
+cpquery(fitted, (roi!='flop'), (genre=='other' ))
+
+#-----------------------------------------------------------------------------------------------------------
+#Are highly popular actors worth it if we want a "great" review?
+#e.g. Pr(critics_vote=great | cast=avg) vs. Pr(critics_vote=great | cast=high)
+
+cpquery(fitted, (critics_vote=='great'), (cast_popularity=='high'))
+cpquery(fitted, (critics_vote=='great'), (cast_popularity=='avg'))
+cpquery(fitted, (critics_vote=='great'), (cast_popularity=='low'))
+
+cpquery(fitted, (community_vote=='great'), (cast_popularity=='high'))
+cpquery(fitted, (community_vote=='great'), (cast_popularity=='avg'))
+cpquery(fitted, (community_vote=='great'), (cast_popularity=='low'))
+
+cpquery(fitted, (community_vote=='great'& critics_vote=='great'), (cast_popularity=='high'))
+cpquery(fitted, (community_vote=='great'& critics_vote=='great'), (cast_popularity=='avg'))
+cpquery(fitted, (community_vote=='great'& critics_vote=='great'), (cast_popularity=='low'))
+
+cpquery(fitted, (community_vote=='great' | critics_vote=='great'), (cast_popularity=='high'))
+cpquery(fitted, (community_vote=='great' | critics_vote=='great'), (cast_popularity=='avg'))
+cpquery(fitted, (community_vote=='great' | critics_vote=='great'), (cast_popularity=='low'))
+
+#-----------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
