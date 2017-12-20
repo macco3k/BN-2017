@@ -113,12 +113,11 @@ cpquery(fitted, (roi!='flop'), (genre=='other' & cast_popularity!='high'))
 #Are highly popular actors worth it if we want a "great" review?
 #e.g. Pr(critics_vote=great | cast=avg) vs. Pr(critics_vote=great | cast=high)
 
-
 cpquery(fitted, (critics_vote=='great'), (cast_popularity=='high'))
 cpquery(fitted, (critics_vote=='great'), (cast_popularity=='avg'))
 cpquery(fitted, (critics_vote=='great'), (cast_popularity=='low'))
 
-
+#-----------------------------------------------------------------------------------------------------------
 
 
 
