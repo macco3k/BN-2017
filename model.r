@@ -3,10 +3,10 @@ library(bnlearn)
 library(Rgraphviz)
 
 root_path = 'D:\\Documents\\Github\\BN-2017'
-root_path = '~/Documents/RU/BN/BN-2017'
+# root_path = '~/Documents/RU/BN/BN-2017'
 data_path = file.path(root_path, 'data')
 
-source(file.path(root_path, 'testable_implications_v3a.r'))
+source(file.path(root_path, 'testable_implications_v3d.r'))
 source(file.path(root_path, 'helper.r'))
 
 # defining the network arcs from the picture
@@ -14,7 +14,7 @@ source(file.path(root_path, 'helper.r'))
 # defined_net_string = "[major][genre|major][budget|major:genre][us|major][cast_popularity|budget][community_count|movie_popularity][community_vote][critics_vote|critics_count][critics_count][movie_popularity|critics_vote:community_count:community_vote:cast_popularity:genre:us][roi|movie_popularity]"
 
 # v3
-defined_net_string = "[major][genre|major][budget|major][us|major][cast_popularity|budget][community_count|us:genre:budget][community_vote|community_count][critics_count|us:genre:budget][critics_vote|critics_count][roi|cast_popularity:community_vote:critics_vote]"
+defined_net_string = "[major][genre|major][budget|major:genre:us][us|major][cast_popularity|budget:us][community_count|us:genre:budget:cast_popularity][community_vote|community_count:critics_vote][critics_count|us:genre:budget][critics_vote|critics_count:budget][roi|cast_popularity:community_vote:critics_vote]"
 
 defined_net = model2network(defined_net_string)
 graphviz.plot(defined_net)
@@ -37,38 +37,33 @@ t <- t[c('major',
 names(t) = c('major','genre','budget','us','cast_popularity','community_vote', 'community_count', 'critics_vote', 'critics_count', 'roi')
 fitted <- bn.fit(defined_net, data=t)
 
-# TODO test independences
-# Look into bnlearn::ci.test or chisq.test
 implications <- getImplications()
 count <- 1
 citest_list <- c()
 citest.p.value <- c()
 citest.names <- c()
 citest.rmsea <- c()
+N <- dim(t)[1]
 
 for (i in implications)
 {
-    # print(i)
+    print(i)
     test <- ci.test(x = i[1] , y = i[2], z = c(i[-1:-2]), data = t, test="x2")
-    citest_list[count] <- test
-    citest.p.value[count] <- test$p.value
-    
-    # not that some numbers will be NaN, this is, according to some webstie overfit of the data
+
+    # note that some numbers will be NaN, this is, according to some webstie overfit of the data
     # so we can safely ignore it
     
-    citest.rmsea[count] <- max(sqrt( ((test$statistic/test$parameter) - 1 )/(3000 - 1)),0)
+    citest.rmsea[count] <- max(sqrt( ((test$statistic/test$parameter) - 1 )/(N - 1)),0)
     citest.names[count] = test$data.name
-
-    
     
     count <- count+1
 }
 
-rmsea = function(test) {
-  max(sqrt( ((test$statistic/test$parameter) - 1 )/(3000 - 1)),0)
-}
+# rmsea = function(test) {
+#   max(sqrt( ((test$statistic/test$parameter) - 1 )/(3000 - 1)),0)
+# }
 
-df <- data.frame(names=citest.names, p.value=citest.p.value)
+# df <- data.frame(names=citest.names, p.value=citest.p.value)
 df <- data.frame(names=citest.names, RMSEA=citest.rmsea)
 
 # todo plot this with points and maybe prettier labels
@@ -78,7 +73,7 @@ plot(df, las=2, xlab='')
 rm(op)
 
 # run the following code: to calculate the rmseas with higher dan 0.05
-df[df["RMSEA"] > 0.05,]
+df = df[df$RMSEA > 0.05 & !is.na(df$RMSEA),]
 
 # TODO inference
 # - predict a movie's popularity
@@ -113,6 +108,12 @@ cpquery(fitted, (roi=='high' & major=='no'), (genre=='dark'))
 cpquery(fitted, (roi=='high' & major=='no'), (genre=='light'))
 cpquery(fitted, (roi=='high' & major=='no'), (genre=='other'))
 cpquery(fitted, (roi!='high'& major=='no'), (genre=='action'))
+# the same for major, for comparison
+cpquery(fitted, (roi=='high' & major=='yes'), (genre=='action'))
+cpquery(fitted, (roi=='high' & major=='yes'), (genre=='dark'))
+cpquery(fitted, (roi=='high' & major=='yes'), (genre=='light'))
+cpquery(fitted, (roi=='high' & major=='yes'), (genre=='other'))
+cpquery(fitted, (roi!='high'& major=='yes'), (genre=='action'))
 
 #-----------------------------------------------------------------------------------------------------------
 
@@ -172,11 +173,3 @@ cpquery(fitted, (community_vote=='great' | critics_vote=='great'), (cast_popular
 cpquery(fitted, (community_vote=='great' | critics_vote=='great'), (cast_popularity=='low'))
 
 #-----------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
