@@ -4,3 +4,5 @@
 .Rhistory
 .vscode
 BN-2017.Rproj
+.idea/workspace.xml
+model.r
