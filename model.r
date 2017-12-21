@@ -2,6 +2,7 @@
 library(bnlearn)
 library(Rgraphviz)
 
+# Change this to yours!
 root_path = 'D:\\Documents\\Github\\BN-2017'
 # root_path = '~/Documents/RU/BN/BN-2017'
 data_path = file.path(root_path, 'data')
@@ -10,14 +11,11 @@ source(file.path(root_path, 'testable_implications_v3d.r'))
 source(file.path(root_path, 'helper.r'))
 
 # defining the network arcs from the picture
-# v2
-# defined_net_string = "[major][genre|major][budget|major:genre][us|major][cast_popularity|budget][community_count|movie_popularity][community_vote][critics_vote|critics_count][critics_count][movie_popularity|critics_vote:community_count:community_vote:cast_popularity:genre:us][roi|movie_popularity]"
-
-# v3
+# v3d
 defined_net_string = "[major][genre|major][budget|major:genre:us][us|major][cast_popularity|budget:us][community_count|us:genre:budget:cast_popularity][community_vote|community_count:critics_vote][critics_count|us:genre:budget][critics_vote|critics_count:budget][roi|cast_popularity:community_vote:critics_vote]"
 
 defined_net = model2network(defined_net_string)
-graphviz.plot(defined_net)
+#graphviz.plot(defined_net)
 
 t <- read.csv(file.path(data_path, 'train.csv'))
 
@@ -39,8 +37,6 @@ fitted <- bn.fit(defined_net, data=t)
 
 implications <- getImplications()
 count <- 1
-citest_list <- c()
-citest.p.value <- c()
 citest.names <- c()
 citest.rmsea <- c()
 N <- dim(t)[1]
@@ -59,10 +55,6 @@ for (i in implications)
     count <- count+1
 }
 
-# rmsea = function(test) {
-#   max(sqrt( ((test$statistic/test$parameter) - 1 )/(3000 - 1)),0)
-# }
-
 # df <- data.frame(names=citest.names, p.value=citest.p.value)
 df <- data.frame(names=citest.names, RMSEA=citest.rmsea)
 
@@ -75,16 +67,10 @@ rm(op)
 # run the following code: to calculate the rmseas with higher dan 0.05
 df = df[df$RMSEA > 0.05 & !is.na(df$RMSEA),]
 
-# TODO inference
-# - predict a movie's popularity
+# - predict a movie's profitability
 #   - see https://sujitpal.blogspot.nl/2013/07/bayesian-network-inference-with-r-and.html
 #   - see http://www.bnlearn.com/documentation/man/cpquery.html for inference given evidence (or not)
-#   - see http://www.bnlearn.com/documentation/man/rbn.html for generating data from the network
-# - predict the prior for popularity
-#   - cpquery(fitted, event=(movie_popularity=='high'), evidence=TRUE) #no evidence
-# - ask the network to get the cpt for popularity (assuming we don't have the movie_popularity column)
-#   - see http://www.bnlearn.com/documentation/man/impute.html
-
+#   - see http://www.bnlearn.com/documentation/man/rbn.html for generating data from the networ
 
 #What makes for a highly profitable movie?
 # Pr(roi=high | genre=action) vs. Pr(roi=high | genre=light)
