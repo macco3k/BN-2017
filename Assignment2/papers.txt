@@ -1,0 +1,7 @@
+According to bnlearn, the following paper is interesting for the si.hiton.pc
+algorithm:
+
+ - http://www.jmlr.org/papers/volume11/aliferis10a/aliferis10a.pdf
+   The explanation about HITON starts on the bottom of page 191
+ - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1480117/pdf/amia2003_0021.pdf
+   The paper that introduces the hiton algorithm, I believe.
