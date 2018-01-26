@@ -18,6 +18,36 @@ count_vstructs <- function(g1, g2){
     dim(v2)[1] - dim(v)[1]
 }
 
+intersection <- function(m1,m2){
+  # compute the intersection
+  m <- rbind(m1,m2)
+  m <- m[duplicated(m), , drop=FALSE]
+}
+
+count_vstructs <- function(g1, g2){
+  v1 <- vstructs(g1)
+  v2 <- vstructs(g2)
+  
+  v <- intersection(v1,v2)
+  
+  if(dim(v1)[1] > dim(v2)[1])
+    dim(v1)[1] - dim(v)[1]
+  else
+    dim(v2)[1] - dim(v)[1]
+}
+
+count_arcs <- function(g1, g2){
+  a1 <- g1$arcs
+  a2 <- g2$arcs
+  
+  a <- intersection(a1,a2)
+  
+  if(dim(a1)[1] > dim(a2)[1])
+    dim(a1)[1] - dim(a)[1]
+  else
+    dim(a2)[1] - dim(a)[1]
+}
+
 # Change this to yours!
 root_path = 'D:\\Documents\\Github\\BN-2017'
 # root_path = '~/Documents/RU/BN/BN-2017'
