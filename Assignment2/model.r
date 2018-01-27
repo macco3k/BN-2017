@@ -4,20 +4,6 @@ library(bnlearn)
 library(Rgraphviz)
 library(foreach)
 
-count_vstructs <- function(g1, g2){
-  v1 <- vstructs(g1)
-  v2 <- vstructs(g2)
-  
-  # compute the intersection
-  v <- rbind(v1,v2)
-  v <- v[duplicated(v), , drop=FALSE]
-  
-  if(dim(v1)[1] > dim(v2)[1])
-    dim(v1)[1] - dim(v)[1]
-  else
-    dim(v2)[1] - dim(v)[1]
-}
-
 intersection <- function(m1,m2){
   # compute the intersection
   m <- rbind(m1,m2)
