@@ -2,7 +2,6 @@
 library(pcalg)
 library(bnlearn)
 library(Rgraphviz)
-library(foreach)
 
 intersection <- function(m1,m2){
   # compute the intersection
@@ -17,11 +16,12 @@ count_vstructs <- function(g1, g2){
   v <- intersection(v1,v2)
   
   if(dim(v1)[1] > dim(v2)[1])
-    dim(v1)[1] - dim(v)[1]
+    c('g1>g2', dim(v1)[1] - dim(v)[1])
   else
-    dim(v2)[1] - dim(v)[1]
+    c('g2>g1', dim(v2)[1] - dim(v)[1])
 }
 
+# compute difference in arcs between g1 and g2
 count_arcs <- function(g1, g2){
   a1 <- g1$arcs
   a2 <- g2$arcs
@@ -29,10 +29,12 @@ count_arcs <- function(g1, g2){
   a <- intersection(a1,a2)
   
   if(dim(a1)[1] > dim(a2)[1])
-    dim(a1)[1] - dim(a)[1]
+    c('g1>g2', dim(a1)[1] - dim(a)[1])
   else
-    dim(a2)[1] - dim(a)[1]
+    c('g2>g1', dim(a2)[1] - dim(a)[1])
 }
+
+# return the set of independencies for a graph
 
 # Change this to yours!
 root_path = 'D:\\Documents\\Github\\BN-2017'
@@ -53,12 +55,12 @@ t <- t[c('major',
          'community_count',
          'critics_vote',
          'critics_count',
-         'roi')]
-         # 'revenue_binned',
+         'roi')]#,
+         #'revenue')]
          # 'popularity_binned')]
 
-nlev <- c(2,4,3,2,3,3,3,3,3,4)
-names(t) = c('major','genre','budget','us','cast_popularity','community_vote', 'community_count', 'critics_vote', 'critics_count', 'roi')
+nlev <- c(2,4,3,2,3,3,3,3,3,4)#,3)
+names(t) = c('major','genre','budget','us','cast_popularity','community_vote', 'community_count', 'critics_vote', 'critics_count', 'roi')#,'revenue')
 
 t_pc <- data.frame(t)
 for(name in names(t_pc)){
@@ -70,19 +72,9 @@ for(name in names(t_pc)){
 
 graph.par(list(nodes=list(fontsize=36)))
 
-suffStat = list(dm=t_pc, nlev=nlev, adaptDF=FALSE, labels=names)
-pc_net = pc(suffStat, indepTest = chisq.test, alpha=0.05, labels=colnames(t), verbose=TRUE)
-plot(pc_net, main = "")
-
-hiton_net = si.hiton.pc(t, undirected = FALSE, test="mi", debug = TRUE, alpha=0.05)
+hiton_net = si.hiton.pc(t, undirected = FALSE, test="x2", debug = TRUE, alpha=0.01)
 graphviz.plot(hiton_net)
 
-hiton_hc_net = hc(t, restart = 1000, optimized = TRUE, whitelist = hiton_net$arcs)
-graphviz.plot(hiton_net)
-
-tabu_net = tabu(t)
-graphviz.plot(tabu_net)
-
-hill_climbing_net = hc(t, restart = 1000, optimized = TRUE)
+hc_net = hc(t, restart = 10, optimized = TRUE)
 graphviz.plot(hill_climbing_net)
 
